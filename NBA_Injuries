@@ -1,0 +1,135 @@
+#Title: ""
+#Author: Yasmine Belkadi 
+#Date: 
+  
+
+#Loading Libraries 
+
+#install.packages("gdata")
+install.packages("dplyr")
+#install.packages("readr")
+#install.packages("idata")
+#install.packages("ggplot")
+#install.packages("ggplot2")
+install.packages("lubridate")
+#install.packages("rdataviewer")
+#install.packages("purrr")
+install.packages("tidyverse")
+install.packages("tidytext")
+install.packages("stringr")
+install.packages("igraph")
+install.packages("ggraph")
+#library("gdata")
+#library("readr")
+library("dplyr")
+#library("idata")
+library("ggraph")
+library("lubridate")
+library("tidyverse")
+library("tidytext")
+#library("purrr")
+library("stringr")
+library("igraph")
+
+
+#Load Dataset 
+
+#injuries = read.csv("injuries.csv")
+injuries <- read_csv("nba-injuries-2010-2018/injuries.csv")
+
+#Inspecting the Dataset
+View(injuries)
+glimpse(injuries) 
+#str(injuries)
+
+#NAs in Dataset 
+print(colSums(is.na(injuries)))
+
+injuries %>% filter(is.na(Team))
+
+#What is the Acquired Variable? 
+injuries %>% filter(!is.na(Acquired)) %>% count(Notes) %>% arrange(desc(n))
+
+#Remove the Acquired Variable 
+injuries = injuries %>% filter(is.na(Acquired)) %>% select(-Acquired)
+print(colSums(is.na(injuries)))
+
+#Removing the Acquired variable also removed the NAs from the Relinquised variable
+
+#Feature Engineering 
+injuries$year = year(injuries$Date)
+injuries$yr_mo = format(injuries$Date, "%Y-%m")
+injuries$month = month(injuries$Date, label = TRUE)
+injuries$day = weekdays(injuries$Date)
+
+#Exploratory Data Analysis (EDA)
+
+
+#Which teams are most impacted by injuries? 
+injuries %>%
+  +     filter(!is.na(Team)) %>%
+  +     count(Team) %>%
+  +     ggplot(aes(x=reorder(Team,n), y=n)) +
+  +     geom_col(fill = "midnightblue", color = "white") +
+  +     coord_flip() +
+  +     theme_bw() +
+  +     labs(x = "Team", y = "Number of events", title = "Which Teams are most Impacted by Injuries") +
+  +     theme(panel.grid.major.y = element_blank(), panel.background = element_rect(fill = "whitesmoke"))
+#It is observed that the Bucks, Timberwolves and Lakers are most impacted by injuries. While the teams least impacted are the Pacers, Blazers and Thunder.
+
+#Which players suffer from the most injuries? 
+injuries %>%
+  +     filter(!is.na(Team)) %>%
+  +     count(Relinquised) %>%
+  +     arrange(desc(n)) %>%
+  +     top_n(n=20) %>%
+  +     ggplot(aes(x=reorder(Relinquised,n), y=n)) +
+  +     geom_col(fill = "midnightblue", color = "white") +
+  +     coord_flip() +
+  +     theme_bw() +
+  +     labs(x = "Player", y = "Number of events", title = "Which Players Suffer from the Most Injuries", subtitle = "Limited to top 20 'injured' players") +
+  +     theme(panel.grid.major.y = element_blank(), panel.background = element_rect(fill = "whitesmoke"))
+
+#The players who have suffered the highest number of injury events are Kevin Love, Jason Smith and Eric Gordon. 
+
+#Tracking injury events over time
+
+it1 <- injuries %>%
+  +     count(year) %>%
+  +     ggplot(aes(x=year, y=n, group = 1)) +
+  +     geom_line() +
+  +     ylim(0,1800) +
+  +     geom_line(size = 1, color = "darkred") +
+  +     geom_point(size = 2, color = "midnightblue") +
+  +     geom_text(color = "midnightblue", aes(label = n, y=n+100)) +
+  +     theme_classic() +
+  +     labs(title = "Tracking injury events over calendar years", x = "Calendar Year", y = "Number events") +
+  +     theme(panel.grid.major.y = element_blank(), panel.background = element_rect(fill = "whitesmoke"))
+
+it2 <- injuries %>%
+  +     count(month) %>%
+  +     ggplot(aes(x=month, y=n, group = 1)) +
+  +     geom_line() +
+  +     ylim(0,2000) +
+  +     geom_line(size = 1, color = "darkred") +
+  +     geom_point(size = 2, color = "midnightblue") +
+  +     geom_text(color = "midnightblue", aes(label = n, y=n+200)) +
+  +     theme_classic() +
+  +     labs(title = "Tracking injury events over months", subtitle = "Note: All-Star Game occurs in February", x = "Month", y = "Number events") +
+  +     theme(panel.grid.major.y = element_blank(), panel.background = element_rect(fill = "whitesmoke"))
+ 
+gridExtra::grid.arrange(it1, it2, ncol = 1)
+
+#Yearly: Beggining in 2010 the number of injury events has increased until 2012. Since 2012 the incidence of injury events has been decreasing. 
+#Monthly: From the start of the regular season in October the number of injury events increases until about February. This is when the All Star Game takes place.
+#The number of injuries peak around the month of March and stay high during the month of April. The number of injuries start to decrease as the regular season comes to an end. 
+
+#What type of injuries are occuring? 
+
+injuries %>%
+  + count(Notes) %>%
+  + arrange(desc(n))
+
+#It is observed that the highest type on injury is a sprained left ankle. 
+####An interessting observation is that rest(DTD) and rest (DNP) occur very often as well.
+#####In order to filter through the incidences of rest, the Notes variable will be split into two variables; one for the cause of injury and the other for the outcome (status).
