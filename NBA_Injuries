@@ -5,20 +5,7 @@
 
 #Loading Libraries 
 
-#install.packages("gdata")
-install.packages("dplyr")
-#install.packages("readr")
-#install.packages("idata")
-#install.packages("ggplot")
-#install.packages("ggplot2")
-install.packages("lubridate")
-#install.packages("rdataviewer")
-#install.packages("purrr")
-install.packages("tidyverse")
-install.packages("tidytext")
-install.packages("stringr")
-install.packages("igraph")
-install.packages("ggraph")
+
 #library("gdata")
 #library("readr")
 library("dplyr")
@@ -131,5 +118,3 @@ injuries %>%
   + arrange(desc(n))
 
 #It is observed that the highest type on injury is a sprained left ankle. 
-####An interessting observation is that rest(DTD) and rest (DNP) occur very often as well.
-#####In order to filter through the incidences of rest, the Notes variable will be split into two variables; one for the cause of injury and the other for the outcome (status).
